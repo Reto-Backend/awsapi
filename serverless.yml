@@ -1,0 +1,72 @@
+service: apiserverless
+
+frameworkVersion: '2'
+
+custom:
+  settings:
+    TASKS_TABLE: task
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  lambdaHashingVersion: 20201221
+  environment: ${self:custom.settings}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - dynamodb: DescribeTable
+        - dynamodb: Scan
+        - dynamodb: GetItem
+        - dynamodb: PutItem
+        - dynamodb: UpdateItem
+        - dynamodb: DeleteItem
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.settings.TASKS_TABLE}"
+
+functions:
+  createTask:
+    handler: handler.createTask
+    events:
+    - http:
+          path: /task
+          method: post
+  getAllTasks:
+    handler: handler.getAllTasks
+    events:
+    - http:
+        path: /task
+        method: get
+  getTask:
+    handler: handler.getTask
+    events:
+    - http:
+        path: /task/{id}
+        method: get
+  updateTask:
+    handler: handler.updateTask
+    events:
+    - http:
+        path: /task/{id}
+        method: put
+  deleteTask:
+    handler: handler.deleteTask
+    events:
+    - http:
+        path: /task/{id}
+        method: delete
+
+resources:
+  Resources:
+    TaskTable:
+      Type: AWS::DynamoDB::Table
+      properties:
+        AttributeDefitions:
+        - AttributeName: "id"
+          AttributeType: "S"
+        KeySchema:
+        - AttributeName: "id"
+          KeyType: "HASH"
+        ProvisionedThroughput:
+          ReadCapacityUnints: 1
+          WriteCapacityUnints: 1
+        TableName: ${self:custom.settings.TASKS_TABLE}  
